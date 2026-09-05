@@ -1,4 +1,5 @@
-from main import suma
+from main import Calculator
 
-def test_suma():
-    assert suma(2, 3) == 5
+def test_sum():
+    calc = Calculator()
+    assert calc.sum(2, 3) == 5
