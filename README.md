@@ -1,17 +1,21 @@
+# 🐷 Mi Web - Control de Chanchitos
 
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
- "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html>
-  <head>
-    <title>503 Backend.max_conn reached</title>
-  </head>
-  <body>
-    <h1>Error 503 Backend.max_conn reached</h1>
-    <p>Backend.max_conn reached</p>
-    <h3>Error 54113</h3>
-    <p>Details: cache-bog-skbo2340058-BOG 1789238910 613141382</p>
-    <hr>
-    <p>Varnish cache server</p>
-  </body>
-</html>
+Sitio web y repositorio dedicado a la gestión, registro y seguimiento del estado anímico de los chanchitos.
+
+##  Descripción
+
+El proyecto clasifica y documenta los diferentes estados de los chanchitos:
+- **Chanchito Feliz:** Estado óptimo, sin errores y listo para producción.
+- **Chanchito Triste:** Requiere atención, depuración o café.
+
+##  Estructura del Proyecto
+
+- `archivo1.txt`: Registro inicial de chanchitos felices.
+- `archivo2.txt`: Actualizaciones de estado.
+- `docs.txt` & `contact.txt`: Información de soporte.
+
+##  Contribución
+
+1. Crear un Issue describiendo el cambio.
+2. Crear una rama siguiendo la convención (`feature/`, `fix/`, `docs/`).
+3. Enviar un Pull Request vinculado al Issue (`Closes #ID`).
