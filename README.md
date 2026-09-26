@@ -13,6 +13,7 @@ El proyecto clasifica y docu  menta los diferentes estados de los chanchitos:
 - `archivo1.txt`: Registro inicial de chanchitos felices.
 - `archivo2.txt`: Actualizaciones de estado.
 - `docs.txt` & `contact.txt`: Información de soporte.
+- `playbook_scrum_tbd.md`: Acuerdos de equipo para Scrum + TBD y CD.
 
 ##  Contribución
 

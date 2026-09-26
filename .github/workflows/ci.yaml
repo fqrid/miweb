@@ -1,12 +1,12 @@
 name: Test and Build
+
 on:
   push:
-    branches:
-      - main
+    branches: [ "master", "main" ]
   pull_request:
-    branches:
-      - main
+    branches: [ "master", "main" ]
   workflow_dispatch:
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -15,40 +15,52 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r src/requirements.txt
+
       - name: Run ruff linter
+        working-directory: src
         run: |
           pip install ruff==0.8.1
           ruff check .
+
       - name: Run tests
+        working-directory: src
         run: |
-          pytest src/test.py
+          pytest test.py
+
   build_and_push:
     needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write  # Permiso para subir a GHCR
+      packages: write  # <-- Permiso para subir a GHCR
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Lowercase the repo name
+        run: echo "REPO=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
+
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v4
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build and push Docker image
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/${{ env.REPO }}:latest
