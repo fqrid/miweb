@@ -33,7 +33,13 @@ _configcat_client = None
 
 if CONFIGCAT_SDK_KEY and configcatclient:
     try:  # pragma: no cover
-        _configcat_client = configcatclient.get(CONFIGCAT_SDK_KEY)
+        from configcatclient import ConfigCatOptions, PollingMode
+
+        options = ConfigCatOptions(
+            polling_mode=PollingMode.auto_poll(poll_interval_seconds=5)
+        )
+        _configcat_client = configcatclient.get(CONFIGCAT_SDK_KEY, options=options)
+        print("[ConfigCat] Cliente inicializado correctamente con auto-polling cada 5s.")
     except Exception as exc:  # noqa: BLE001  # pragma: no cover
         print(f"[ConfigCat] Advertencia al inicializar cliente: {exc}")
 
@@ -41,25 +47,26 @@ if CONFIGCAT_SDK_KEY and configcatclient:
 def is_dark_mode_enabled(user_id: str | None = None) -> bool:
     """Evalúa el Feature Toggle 'dark_mode_enabled' en ConfigCat.
 
-    Ticket 2: Simulación de Rollout / flag encendido (ON).
-    El fallback por defecto es True a menos que se defina explícitamente en False.
+    Si ConfigCat está conectado, consulta el flag remoto (con soporte para
+    'dark_mode_enabled' o 'darkModeEnabled'). Si no está conectado o la clave no
+    existe, consulta la variable de entorno DARK_MODE_ENABLED (por defecto false).
     """
-    if _configcat_client and configcatclient and User:
-        user = User(user_id) if user_id else None
-        return _configcat_client.get_value("dark_mode_enabled", False, user)
+    if _configcat_client and configcatclient:
+        user = User(user_id) if (user_id and User) else None
+        # Evaluar 'dark_mode_enabled' o alternativa camelCase 'darkModeEnabled'
+        val = _configcat_client.get_value("dark_mode_enabled", None, user)
+        if val is None:
+            val = _configcat_client.get_value("darkModeEnabled", None, user)
+        if val is not None:
+            return bool(val)
 
-    # Fallback para Ticket 2: Toggle encendido (ON)
-    fallback = os.environ.get("DARK_MODE_ENABLED", "true").strip().lower()
+    # Fallback seguro: si no hay cliente ConfigCat, utiliza la variable de entorno
+    fallback = os.environ.get("DARK_MODE_ENABLED", "false").strip().lower()
     return fallback in ("true", "1", "yes")
 
 
 def get_theme_context(user_id: str | None = None) -> dict:
-    """Lógica de tema raíz protegida por Feature Toggle (Ticket 2).
-
-    El flag_enabled habilita la presencia del botón toggle en la UI.
-    La página carga inicialmente en light-theme y el usuario puede alternarlo
-    dinámicamente mediante el botón en el cliente.
-    """
+    """Lógica de tema raíz protegida por Feature Toggle."""
     flag_enabled = is_dark_mode_enabled(user_id=user_id)
 
     # Carga inicial por defecto en claro; el botón JS alterna en vivo
@@ -70,6 +77,8 @@ def get_theme_context(user_id: str | None = None) -> dict:
 
     return {
         "feature_flag_enabled": flag_enabled,
+        "configcat_connected": bool(_configcat_client is not None),
+        "configcat_sdk_key_configured": bool(CONFIGCAT_SDK_KEY),
         "dark_mode_active": is_dark,
         "theme_class": theme_class,
         "data_theme": data_theme,
@@ -343,24 +352,35 @@ HTML_TEMPLATE = """
 
         <div class="grid">
             <!-- Card 1: Feature Toggle ConfigCat -->
+            <!-- Card 1: Feature Toggle ConfigCat -->
             <div class="card">
                 <h2>🚩 Feature Toggle (ConfigCat)</h2>
-                <p style="margin-bottom: 0.75rem; color: var(--text-secondary);">
-                    Flag registrado: <code>dark_mode_enabled</code>
+                <p style="margin-bottom: 0.5rem; color: var(--text-secondary);">
+                    Flag evaluado: <code>dark_mode_enabled</code>
                 </p>
+                <div style="margin-bottom: 0.75rem; font-size: 0.85rem;">
+                    <strong>Origen de datos:</strong>
+                    {% if theme.configcat_connected %}
+                        <span style="color: #15803d; font-weight: 600;">🟢 ConfigCat SDK en vivo (refresco 5s)</span>
+                    {% elif theme.configcat_sdk_key_configured %}
+                        <span style="color: #d97706; font-weight: 600;">🟡 SDK Key configurada</span>
+                    {% else %}
+                        <span style="color: #64748b; font-weight: 600;">⚪ Modo local (Variable DARK_MODE_ENABLED)</span>
+                    {% endif %}
+                </div>
                 <div style="margin-bottom: 1rem;">
                     <strong>Estado actual:</strong>
                     {% if theme.feature_flag_enabled %}
-                        <span style="color: #15803d; font-weight: bold;">● ACTIVADO (ON / Rollout Activo)</span>
+                        <span style="color: #15803d; font-weight: bold;">● ACTIVADO (ON)</span>
                     {% else %}
-                        <span style="color: #b91c1c; font-weight: bold;">● APAGADO (OFF / Dark Launch)</span>
+                        <span style="color: #b91c1c; font-weight: bold;">● APAGADO (OFF)</span>
                     {% endif %}
                 </div>
                 <p style="font-size: 0.85rem; color: var(--text-secondary);">
                     {% if theme.feature_flag_enabled %}
-                        ✅ <em>Rollout Activo:</em> El botón de modo oscuro es visible e interactivo para los usuarios autorizados por ConfigCat.
+                        ✅ <em>Activo:</em> El botón de modo oscuro es visible e interactivo para los usuarios.
                     {% else %}
-                        🛡️ <em>Dark Launch:</em> El código está integrado en master pero oculto para los usuarios.
+                        🛡️ <em>Desactivado:</em> El modo oscuro está apagado y el botón se mantiene oculto.
                     {% endif %}
                 </p>
             </div>
@@ -439,11 +459,18 @@ HTML_TEMPLATE = """
             localStorage.setItem('theme', newTheme);
         }
 
-        // Ticket 3: Carga Inicial (On Load) - Restaurar preferencia desde localStorage
+        // Ticket 3: Carga Inicial (On Load)
         document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                applyTheme(savedTheme);
+            const flagEnabled = {{ 'true' if theme.feature_flag_enabled else 'false' }};
+            if (flagEnabled) {
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme) {
+                    applyTheme(savedTheme);
+                }
+            } else {
+                // Si el flag está desactivado en ConfigCat, forzar tema claro y limpiar localStorage
+                applyTheme('light');
+                localStorage.removeItem('theme');
             }
         });
 
