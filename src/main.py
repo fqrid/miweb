@@ -28,7 +28,10 @@ calculator = Calculator
 
 
 # --- 2. Integración de Feature Toggle (ConfigCat) ---
-CONFIGCAT_SDK_KEY = os.environ.get("CONFIGCAT_SDK_KEY", "").strip()
+CONFIGCAT_SDK_KEY = os.environ.get(
+    "CONFIGCAT_SDK_KEY",
+    "configcat-sdk-1/hCHfCO3blUmOGtb4M93ArQ/Yyqu66vw20iaZ0vuvQ6hWg",
+).strip()
 _configcat_client = None
 
 if CONFIGCAT_SDK_KEY and configcatclient:
@@ -47,22 +50,25 @@ if CONFIGCAT_SDK_KEY and configcatclient:
 def is_dark_mode_enabled(user_id: str | None = None) -> bool:
     """Evalúa el Feature Toggle 'dark_mode_enabled' en ConfigCat.
 
-    Si ConfigCat está conectado, consulta el flag remoto (con soporte para
-    'dark_mode_enabled' o 'darkModeEnabled'). Si no está conectado o la clave no
-    existe, consulta la variable de entorno DARK_MODE_ENABLED (por defecto false).
+    Si DARK_MODE_ENABLED está definido en el entorno (pruebas/CI), tiene prioridad.
+    En producción (Render), consulta directamente al SDK de ConfigCat en vivo.
     """
+    if "DARK_MODE_ENABLED" in os.environ:
+        return os.environ.get("DARK_MODE_ENABLED", "false").strip().lower() in (
+            "true",
+            "1",
+            "yes",
+        )
+
     if _configcat_client and configcatclient:
         user = User(user_id) if (user_id and User) else None
-        # Evaluar 'dark_mode_enabled' o alternativa camelCase 'darkModeEnabled'
         val = _configcat_client.get_value("dark_mode_enabled", None, user)
         if val is None:
             val = _configcat_client.get_value("darkModeEnabled", None, user)
         if val is not None:
             return bool(val)
 
-    # Fallback seguro: si no hay cliente ConfigCat, utiliza la variable de entorno
-    fallback = os.environ.get("DARK_MODE_ENABLED", "false").strip().lower()
-    return fallback in ("true", "1", "yes")
+    return False
 
 
 def get_theme_context(user_id: str | None = None) -> dict:
