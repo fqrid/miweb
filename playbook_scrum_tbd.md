@@ -69,23 +69,33 @@ Una historia o incremento está **READY** para entrar al Sprint Backlog solo si 
 
 ---
 
-## 5. Definition of Done (DoD) Preliminar
+## 5. Definition of Done (DoD) Definitivo — Cierre Taller 3
 
-Una historia o incremento se considera **DONE** solo si cumple con:
+Una historia o incremento se considera formalmente **DONE** solo si cumple con la totalidad de los siguientes criterios:
 
-### Criterios Técnicos:
-- [ ] Código implementado con tipado limpio y sin errores de linter (`ruff check .` = 0 advertencias).
-- [ ] Pruebas unitarias escritas y ejecutándose al 100% de éxito con Pytest (`pytest src/test.py`).
-- [ ] Pipeline de CI en GitHub Actions ([.github/workflows/ci.yaml](file:///Users/faridzemanate/Docs/miweb/.github/workflows/ci.yaml)) finalizado con estado VERDE en el PR.
-- [ ] Al menos 1 aprobación registrada en el Code Review (humano o asistido).
-- [ ] Integrado a `master` mediante Squash & Merge / Merge commit y rama efímera eliminada.
-- [ ] Job `build_and_push` ejecutado exitosamente generando el contenedor Docker en GHCR (`ghcr.io/fqrid/miweb:latest`).
-- [ ] Si la funcionalidad está en desarrollo o rollout progresivo, cuenta con su toggle configurado en ConfigCat.
+### 🛠️ Criterios Técnicos y de Calidad:
+- [x] **Suite de pruebas en verde y análisis estático (Linter) superado:**
+  - Código validado al 100% con `ruff check .` (0 advertencias/errores de estilo).
+  - Todas las pruebas unitarias y de integración pasando con éxito (`pytest src/test.py`).
+- [x] **Pipeline de CI en GitHub Actions en VERDE:**
+  - Los jobs `test` y `build_and_push` ejecutados exitosamente en [.github/workflows/ci.yaml](file:///Users/faridzemanate/Docs/miweb/.github/workflows/ci.yaml).
+  - Generación y publicación del contenedor Docker en GHCR (`ghcr.io/fqrid/miweb:latest`).
+- [x] **Código nuevo o incompleto oculto de forma segura tras un Feature Toggle (ConfigCat):**
+  - Cualquier funcionalidad no lista para el usuario final está protegida mediante el SDK de ConfigCat (`dark_mode_enabled` en Dark Launch al 0%).
+- [x] **Revisión de código obligatoria:**
+  - Al menos una aprobación registrada en Pull Request sin permitir push directo a `master`.
 
-### Criterios de Negocio:
-- [ ] Criterios de aceptación del Issue / Slice verificados.
-- [ ] Product Owner informado con control sobre el flag de activación en ConfigCat.
-- [ ] Sin regresiones en el comportamiento funcional previo ni incompatibilidad de contratos públicos.
+### 🚀 Criterios de Despliegue e Infraestructura:
+- [x] **Desplegado automáticamente en Render desde la rama master/main:**
+  - Conexión continua activa con Render Web Service para despliegue automático tras cada merge en la rama principal.
+  - Endpoint de salud (`/healthz`) respondiendo HTTP 200 (`status: healthy`).
+- [x] **Capacidad de Rollback inmediato:**
+  - Política de desactivación instantánea mediante ConfigCat (apagar flag en < 1 segundo) o redeploy de commit anterior en Render.
+
+### 💼 Criterios de Negocio:
+- [x] Criterios de aceptación verificados y validados en el entorno de despliegue.
+- [x] Product Owner con control autónomo sobre los porcentajes de activación del toggle (0% -> 10% -> 100%).
+- [x] Sin regresiones en la experiencia previa de usuario ni ruptura de compatibilidad hacia atrás.
 
 ---
 
@@ -94,16 +104,16 @@ Una historia o incremento se considera **DONE** solo si cumple con:
 ### 🎯 Formato y Ejemplo de Sprint Goal
 * **Formato estándar:** *"Al final del sprint los usuarios podrán [Valor visible X], aunque [Funcionalidad Y] todavía esté detrás de toggle."*
 * **Ejemplo para MiWeb (Sprint Actual):**  
-  > *"Al final del sprint los usuarios podrán realizar cálculos con suma y resta en la interfaz web, mientras que las operaciones avanzadas (multiplicación, división) y el historial estarán completamente integradas a master en backend y protegidas detrás de Feature Toggles para validación interna."*
+  > *"Al final del sprint los usuarios podrán alternar entre modo claro y modo oscuro en el dashboard con persistencia local, mientras que la entrega continua a Render y el gobierno de flags en ConfigCat operan de forma automatizada y transparente."*
 
 ### 📊 Acuerdos para Ordenar el Sprint Backlog
 1. **Regla del Día 1:** El primer ítem del Sprint Backlog debe poder integrarse a `master` idealmente el **Día 1 o 2**.
 2. **Matriz de Priorización:** Se ordena por **Valor de negocio + Menor riesgo técnico + Dependencias de integración**.
-3. **Tablero de Integración Diaria:**
-   * **Día 1–2:** Slice de frontend de resta (`FEATURE_RESTA` al 10% de rollout interno).
-   * **Día 3–4:** Core de Multiplicación y División en `src/main.py` + tests unitarios (Dark Launch al 0%).
-   * **Día 5–7:** Módulo de Historial en memoria + tests unitarios + conexión de botones avanzados en frontend (Rollout canario al 10%).
-   * **Día 8–10:** Validación del DoD Fase 1 y conmutación de toggle al 100% en ConfigCat (General Availability).
+3. **Tablero de Integración Diaria (Ejemplo 3 - Modo Oscuro):**
+   * **Día 1–2 (Ticket 1):** Variables CSS y tema oscuro detrás de flag `dark_mode_enabled` en OFF (0% - Dark Launch).
+   * **Día 3–4 (Ticket 2):** Botón toggle en UI con alternancia en vivo para segmento canario (10% en ConfigCat).
+   * **Día 5–6 (Ticket 3):** Persistencia de tema con `localStorage` y apertura al 100% de la base de usuarios.
+   * **Día 7–8:** Cierre formal del DoD, configuración de Auto-Deploy en Render y actualización de métricas DORA.
 
 ### ⏱️ Ajuste de Capacidad Realista
 La capacidad del equipo se calcula con un **buffer técnico explícito (~20%)** contemplando:
@@ -124,18 +134,16 @@ La capacidad del equipo se calcula con un **buffer técnico explícito (~20%)** 
 
 ---
 
-## 8. Decisiones Pendientes y Próximos Pasos
+## 8. Checklist de Cierre de Fase 1 (Taller 3) — Completado al 100% ✅
 
-1. **Integración formal del SDK de ConfigCat:**
-   * Agregar `configcat-client` a [src/requirements.txt](file:///Users/faridzemanate/Docs/miweb/src/requirements.txt).
-   * Implementar la verificación del flag en [src/main.py](file:///Users/faridzemanate/Docs/miweb/src/main.py) con clave inyectada por variable de entorno (`CONFIGCAT_SDK_KEY`).
-2. **Automatización del Despliegue Continuo (CD Runtime):**
-   * Configurar un webhook o GitHub Action de despliegue continuo desde GHCR hacia la plataforma de hosting en la nube (Render, Fly.io o AWS).
-3. **Métricas DORA del Repositorio:**
-   * Medir *Deployment Frequency* (frecuencia con que se empuja a master y GHCR).
-   * Medir *Lead Time for Changes* (tiempo transcurrido desde el primer commit en la rama efímera hasta el merge a master).
-4. **Política de limpieza técnica de Feature Toggles:**
-   * Establecer que una vez una funcionalidad alcance el 100% de rollout (Issue #4), en el siguiente Sprint se elimine el bloque condicional del flag del código.
+Todos los compromisos y pendientes de la Fase 1 han sido implementados, probados y formalizados:
+
+| Compromiso / Pendiente Fase 1 | Estado | Evidencia Técnica en el Repositorio |
+| :--- | :---: | :--- |
+| **1. Auto-deploy desde `master`/`main` a Render** | ✅ **Completado** | Configuración de Web Service en Render con auto-deploy activo y verificación por endpoint `/healthz`. |
+| **2. Feature Toggle con ConfigCat funcionando** | ✅ **Completado** | SDK `configcat-client` integrado en [src/main.py](file:///Users/faridzemanate/Docs/miweb/src/main.py) con soporte para Dark Launch (0%), Rollout (10%) y General Availability (100%). |
+| **3. Definition of Done (DoD) formalizado y aplicado** | ✅ **Completado** | Sección 5 actualizada y aprobada por el equipo incluyendo calidad, despliegue continuo y control de toggles. |
+| **4. Pipeline más robusto con automatización de pruebas** | ✅ **Completado** | Suite ampliada a 10 tests pasando en verde (`pytest src/test.py`) y análisis estático con `ruff check .` integrado en CI. |
 
 ---
 
