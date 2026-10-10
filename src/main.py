@@ -71,9 +71,26 @@ def is_dark_mode_enabled(user_id: str | None = None) -> bool:
     return False
 
 
+def is_auto_theme_enabled(user_id: str | None = None) -> bool:
+    """Evalúa el Feature Toggle 'auto-theme-v1' en ConfigCat."""
+    if "AUTO_THEME_ENABLED" in os.environ:
+        return os.environ.get("AUTO_THEME_ENABLED", "false").strip().lower() in ("true", "1", "yes")
+
+    if _configcat_client and configcatclient:
+        user = User(user_id) if (user_id and User) else None
+        val = _configcat_client.get_value("auto-theme-v1", None, user)
+        if val is None:
+            val = _configcat_client.get_value("autoThemeV1", None, user)
+        if val is not None:
+            return bool(val)
+
+    return False
+
+
 def get_theme_context(user_id: str | None = None) -> dict:
     """Lógica de tema raíz protegida por Feature Toggle."""
     flag_enabled = is_dark_mode_enabled(user_id=user_id)
+    auto_theme_enabled = is_auto_theme_enabled(user_id=user_id)
 
     # Carga inicial por defecto en claro; el botón JS alterna en vivo
     is_dark = False
@@ -83,6 +100,7 @@ def get_theme_context(user_id: str | None = None) -> dict:
 
     return {
         "feature_flag_enabled": flag_enabled,
+        "auto_theme_enabled": auto_theme_enabled,
         "configcat_connected": bool(_configcat_client is not None),
         "configcat_sdk_key_configured": bool(CONFIGCAT_SDK_KEY),
         "dark_mode_active": is_dark,
@@ -362,7 +380,7 @@ HTML_TEMPLATE = """
             <div class="card">
                 <h2>🚩 Feature Toggle (ConfigCat)</h2>
                 <p style="margin-bottom: 0.5rem; color: var(--text-secondary);">
-                    Flag evaluado: <code>dark_mode_enabled</code>
+                    Flags evaluados: <code>dark_mode_enabled</code>, <code>auto-theme-v1</code>
                 </p>
                 <div style="margin-bottom: 0.75rem; font-size: 0.85rem;">
                     <strong>Origen de datos:</strong>
@@ -382,13 +400,21 @@ HTML_TEMPLATE = """
                         <span style="color: #b91c1c; font-weight: bold;">● APAGADO (OFF)</span>
                     {% endif %}
                 </div>
-                <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
                     {% if theme.feature_flag_enabled %}
                         ✅ <em>Activo:</em> El botón de modo oscuro es visible e interactivo para los usuarios.
                     {% else %}
                         🛡️ <em>Desactivado:</em> El modo oscuro está apagado y el botón se mantiene oculto.
                     {% endif %}
                 </p>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--surface-border);">
+                    <strong>Tema Automático (auto-theme-v1):</strong>
+                    {% if theme.auto_theme_enabled %}
+                        <span style="color: #15803d; font-weight: bold;">ACTIVADO (ON)</span>
+                    {% else %}
+                        <span style="color: #64748b; font-weight: bold;">DESACTIVADO (OFF)</span>
+                    {% endif %}
+                </div>
             </div>
 
             <!-- Card 2: División de Historias (Ejemplo 3) -->
@@ -468,8 +494,22 @@ HTML_TEMPLATE = """
         // Ticket 3: Carga Inicial (On Load)
         document.addEventListener('DOMContentLoaded', () => {
             const flagEnabled = {{ 'true' if theme.feature_flag_enabled else 'false' }};
+            const autoThemeEnabled = {{ 'true' if theme.auto_theme_enabled else 'false' }};
+            
             if (flagEnabled) {
-                const savedTheme = localStorage.getItem('theme');
+                let savedTheme = localStorage.getItem('theme');
+                
+                // Si el auto-theme está ON y no hay tema guardado manualmente, aplicar por hora
+                if (autoThemeEnabled && !savedTheme) {
+                    const hour = new Date().getHours();
+                    // Modo oscuro desde las 18:00 hasta las 05:59
+                    if (hour >= 18 || hour < 6) {
+                        savedTheme = 'dark';
+                    } else {
+                        savedTheme = 'light';
+                    }
+                }
+                
                 if (savedTheme) {
                     applyTheme(savedTheme);
                 }
@@ -484,6 +524,8 @@ HTML_TEMPLATE = """
             const a = parseInt(document.getElementById('numA').value) || 0;
             const b = parseInt(document.getElementById('numB').value) || 0;
             document.getElementById('calcResult').textContent = '= ' + (a + b);
+        }
+
         }
     </script>
 </body>

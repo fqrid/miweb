@@ -157,3 +157,21 @@ Todos los compromisos y pendientes de la Fase 1 han sido implementados, probados
 ### 🔄 Ronda Final: “¿Qué cambia en nuestra próxima Planning después de este taller?”
 * **Antes:** Planificábamos pensando en qué íbamos a *"terminar"* dentro de 15 días, aceptábamos historias grandes con UI y backend acoplados, y asumíamos el estrés del merge al final del Sprint.
 * **A partir de mañana:** Planificamos pensando en **qué vamos a integrar a `master` cada día**. Las historias entran rebanadas en vertical con su Feature Toggle identificado. Salimos de la Planning sabiendo con certeza qué Pull Request estará en verde el primer día y con el compromiso colectivo de no dejar envejecer ninguna rama.
+
+---
+
+## Anexo: Gobernanza de Continuous Deployment
+
+### Nuevo enfoque del Sprint Review
+Las demos se centrarán en incrementos que ya se encuentran en producción (activables por toggles) y en demostrar el valor real entregado, no solo en un recuento de "qué se programó".
+
+### Nuevos focos de la Retrospective
+Añadimos la revisión obligatoria de:
+* **Salud del pipeline:** Tiempos de CI y despliegues fallidos.
+* **Métricas de TBD:** Frecuencia de integraciones diarias a `main`/`master`.
+* **Limpieza de deuda técnica:** Retiro de Feature Toggles antiguos.
+
+### Política de Liberación Segura (Feature Toggles)
+* **Despliegue Incremental:** El rollout siempre será progresivo (ej. internos -> % -> 100%).
+* **Monitoreo Obligatorio:** Observación de métricas técnicas (latencia, errores) y de negocio (conversión) durante las primeras 48h.
+* **Rollback Inmediato (Kill Switch):** El equipo técnico tiene plena autoridad para ejecutar un apagado de emergencia si los errores superan los umbrales definidos, sin necesidad de permisos o aprobaciones.
