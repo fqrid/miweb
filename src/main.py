@@ -526,8 +526,6 @@ HTML_TEMPLATE = """
             const b = parseInt(document.getElementById('numB').value) || 0;
             document.getElementById('calcResult').textContent = '= ' + (a + b);
         }
-
-        }
     </script>
 </body>
 </html>
