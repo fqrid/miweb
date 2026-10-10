@@ -351,8 +351,12 @@ HTML_TEMPLATE = """
             <strong>MiWeb Dashboard</strong>
         </div>
         <div class="header-actions">
-            <!-- Ticket 2: Botón condicional expuesto SOLO si el Feature Flag está activo -->
-            {% if theme.feature_flag_enabled %}
+            <!-- Ticket 2: Botón de tema -->
+            {% if theme.auto_theme_enabled %}
+                <button class="theme-toggle-btn" style="opacity: 0.6; cursor: not-allowed;" title="Bloqueado por Auto-Tema">
+                    <span>⏰ Auto-Tema Activo</span>
+                </button>
+            {% elif theme.feature_flag_enabled %}
                 <button id="themeToggleBtn" class="theme-toggle-btn" onclick="toggleTheme()">
                     <span id="themeIcon">🌙 Modo Oscuro</span>
                 </button>
@@ -496,25 +500,22 @@ HTML_TEMPLATE = """
             const flagEnabled = {{ 'true' if theme.feature_flag_enabled else 'false' }};
             const autoThemeEnabled = {{ 'true' if theme.auto_theme_enabled else 'false' }};
             
-            if (flagEnabled) {
-                let savedTheme = localStorage.getItem('theme');
-                
-                // Si el auto-theme está ON y no hay tema guardado manualmente, aplicar por hora
-                if (autoThemeEnabled && !savedTheme) {
-                    const hour = new Date().getHours();
-                    // Modo oscuro desde las 18:00 hasta las 05:59
-                    if (hour >= 18 || hour < 6) {
-                        savedTheme = 'dark';
-                    } else {
-                        savedTheme = 'light';
-                    }
+            if (autoThemeEnabled) {
+                // Si auto-theme está activo, forzamos la hora e ignoramos decisiones manuales
+                const hour = new Date().getHours();
+                if (hour >= 18 || hour < 6) {
+                    applyTheme('dark');
+                } else {
+                    applyTheme('light');
                 }
-                
+            } else if (flagEnabled) {
+                // Si auto-theme está apagado pero el modo oscuro manual está activo, respetamos el localStorage
+                const savedTheme = localStorage.getItem('theme');
                 if (savedTheme) {
                     applyTheme(savedTheme);
                 }
             } else {
-                // Si el flag está desactivado en ConfigCat, forzar tema claro y limpiar localStorage
+                // Ambos flags apagados
                 applyTheme('light');
                 localStorage.removeItem('theme');
             }
