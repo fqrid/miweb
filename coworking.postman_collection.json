@@ -356,6 +356,309 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "10. LAB 10 - JWT + RBAC (:8002)",
+      "description": "Endpoints de autenticación JWT y control de acceso basado en roles (RBAC) para el orders-service.",
+      "item": [
+        {
+          "name": "10.1 Registrar Usuario (user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Tiene role='user'\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.role).to.eql(\"user\");",
+                  "    pm.expect(json.is_active).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@coworking.dev\",\n  \"name\": \"Usuario Regular\",\n  \"password\": \"MiClave123!\",\n  \"role\": \"user\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8002/auth/register",
+              "protocol": "http", "host": ["localhost"], "port": "8002", "path": ["auth","register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10.2 Registrar Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Tiene role='admin'\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.role).to.eql(\"admin\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@coworking.dev\",\n  \"name\": \"Administrador\",\n  \"password\": \"AdminPass456!\",\n  \"role\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8002/auth/register",
+              "protocol": "http", "host": ["localhost"], "port": "8002", "path": ["auth","register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10.3 Login (obtener token JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve access_token\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.access_token).to.be.a(\"string\");",
+                  "    pm.expect(json.token_type).to.eql(\"bearer\");",
+                  "    // Guardar token para las siguientes requests",
+                  "    pm.collectionVariables.set(\"JWT_TOKEN\", json.access_token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {"key": "username", "value": "usuario@coworking.dev", "type": "text"},
+                {"key": "password", "value": "MiClave123!", "type": "text"}
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8002/auth/login",
+              "protocol": "http", "host": ["localhost"], "port": "8002", "path": ["auth","login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10.4 Login Admin (obtener token JWT admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve access_token\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set(\"JWT_ADMIN_TOKEN\", json.access_token);",
+                  "    pm.expect(json.access_token).to.be.a(\"string\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {"key": "username", "value": "admin@coworking.dev", "type": "text"},
+                {"key": "password", "value": "AdminPass456!", "type": "text"}
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8002/auth/login",
+              "protocol": "http", "host": ["localhost"], "port": "8002", "path": ["auth","login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10.5 GET /auth/me (mi perfil)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve email y role\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.email).to.be.a(\"string\");",
+                  "    pm.expect(json.role).to.be.a(\"string\");",
+                  "    pm.expect(json.is_active).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{JWT_TOKEN}}"}],
+            "url": {
+              "raw": "http://localhost:8002/auth/me",
+              "protocol": "http", "host": ["localhost"], "port": "8002", "path": ["auth","me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10.6 GET /auth/me sin token → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 401 Unauthorized\", () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8002/auth/me",
+              "protocol": "http", "host": ["localhost"], "port": "8002", "path": ["auth","me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10.7 GET /users con token admin → 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve lista de usuarios\", () => {",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{JWT_ADMIN_TOKEN}}"}],
+            "url": {
+              "raw": "http://localhost:8002/users",
+              "protocol": "http", "host": ["localhost"], "port": "8002", "path": ["users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10.8 GET /users con token user → 403 Forbidden (RBAC)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 403 Forbidden — RBAC funciona\", () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{JWT_TOKEN}}"}],
+            "url": {
+              "raw": "http://localhost:8002/users",
+              "protocol": "http", "host": ["localhost"], "port": "8002", "path": ["users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10.9 GET /orders con token → 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve lista de órdenes\", () => {",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{JWT_TOKEN}}"}],
+            "url": {
+              "raw": "http://localhost:8002/orders",
+              "protocol": "http", "host": ["localhost"], "port": "8002", "path": ["orders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10.10 GET /orders sin token → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 401 Unauthorized\", () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8002/orders",
+              "protocol": "http", "host": ["localhost"], "port": "8002", "path": ["orders"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "JWT_TOKEN",
+      "value": "",
+      "description": "Token JWT del usuario regular (role: user) — se llena automáticamente en 10.3"
+    },
+    {
+      "key": "JWT_ADMIN_TOKEN",
+      "value": "",
+      "description": "Token JWT del admin (role: admin) — se llena automáticamente en 10.4"
     }
   ]
 }
