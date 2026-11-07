@@ -3,7 +3,7 @@ import time
 import logging
 from datetime import datetime
 import enum
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Enum as SQLEnum, text
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Enum as SQLEnum, text, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError
@@ -52,6 +52,10 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     name = Column(String(255), nullable=True)
+    # LAB 10: JWT + RBAC — campos de autenticación y control de acceso
+    hashed_password = Column(String(255), nullable=True)          # bcrypt hash de la contraseña
+    role = Column(String(50), nullable=False, default="user")     # "user" | "admin" | "superadmin"
+    is_active = Column(Boolean, nullable=False, default=True)     # permite deshabilitar usuarios
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Order(Base):
